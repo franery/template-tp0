@@ -19,23 +19,25 @@ public class RegExGenerator {
     private static int firstASCIIchar = 33;
     private static int maxASCIIchar = 127;
 
-    private ArrayList<String> quantifiers;
+    private ArrayList<String> specialCharacters;
 
-    private void addQuantifiers() {
-        this.quantifiers = new ArrayList<>();
-        this.quantifiers.add(questionMark);
-        this.quantifiers.add(plus);
-        this.quantifiers.add(asterisk);
+    private void addCharacters() {
+        this.specialCharacters = new ArrayList<>();
+        this.specialCharacters.add(questionMark);
+        this.specialCharacters.add(plus);
+        this.specialCharacters.add(asterisk);
+        this.specialCharacters.add(leftBracket);
+        this.specialCharacters.add(rightBracket);
     }
 
     public RegExGenerator() {
         this.maxLength = 4;
-        this.addQuantifiers();
+        this.addCharacters();
     }
 
     public RegExGenerator(int maxLength) {
         this.maxLength = maxLength;
-        this.addQuantifiers();
+        this.addCharacters();
     }
 
     private String getChar(String charSet) {
@@ -43,12 +45,16 @@ public class RegExGenerator {
         int value = 0;
         if (charSet.equals(dot)) {
             value = rand.nextInt(maxASCIIchar - firstASCIIchar) + firstASCIIchar;
-            System.out.println("Value: " + value);
             return Character.toString((char) value);
-        }
-        if (charSet.length() > 1) {
-            value = rand.nextInt(charSet.length()) + 1;
-            return Character.toString(charSet.charAt(value));
+        } else {
+            if (charSet.length() > 1) {
+                if (charSet.charAt(0) == '\\') {
+                    return Character.toString(charSet.charAt(1));
+                } else {
+                    value = rand.nextInt(charSet.length());
+                    return Character.toString(charSet.charAt(value));
+                }
+            }
         }
         return charSet;
     }
@@ -79,27 +85,76 @@ public class RegExGenerator {
         return generated.toString();
     }
 
-    private String generateString(String regEx) {
+    private String generateBracketSet(RegularExpression regularExpression) throws Exception {
+        String regEx = regularExpression.getRegEx();
+        int index = regularExpression.getIndex();
+        int positionBracket = regEx.indexOf(rightBracket,index);
+        if (positionBracket != -1) {
+            regularExpression.setPrevious(regEx.substring(index + 1, positionBracket));
+            regularExpression.setIndex(positionBracket);
+            if (regularExpression.getIndex() == regEx.length() - 1) {
+                return getChar(regularExpression.getPrevious());
+            }
+        } else {
+            throw new Exception();
+        }
+        return "";
+    }
+
+    private String generateSpecialString(RegularExpression regularExpression, String current) throws Exception {
+        if (current.equals(questionMark) || current.equals(asterisk) || current.equals(plus)) {
+            String previous = regularExpression.getPrevious();
+            regularExpression.setPrevious("");
+            return generateQuantifierString(previous, current);
+        }
+        if (current.equals(leftBracket)) {
+            return generateBracketSet(regularExpression);
+        }
+        return "";
+    }
+
+    private String readLiteral(RegularExpression regularExpression, String current) {
+        if (regularExpression.getPrevious().equals(slash)) {
+            regularExpression.setPrevious(slash + current);
+            return "";
+        } else {
+            String previous = regularExpression.getPrevious();
+            regularExpression.setPrevious(current);
+            return previous;
+        }
+    }
+
+    private String checkBracket(RegularExpression regularExpression, String current) {
+        if (current.equals(leftBracket) && !regularExpression.getPrevious().equals(slash)) {
+            return regularExpression.getPrevious();
+        }
+        return "";
+    }
+
+    private String generateString(String regEx) throws Exception {
         StringBuilder generatedString = new StringBuilder();
-        String previous = "";
+        RegularExpression regularExpression = new RegularExpression(regEx);
         for (int i = 0; i < regEx.length(); i++) {
+            regularExpression.setIndex(i);
             String current = Character.toString(regEx.charAt(i));
-            if (quantifiers.contains(current)) {
-                generatedString.append(generateQuantifierString(previous, current));
-                previous = "";
+            generatedString.append(getChar(checkBracket(regularExpression, current)));
+            if (specialCharacters.contains(current) && !regularExpression.getPrevious().equals(slash)) {
+                generatedString.append(generateSpecialString(regularExpression, current));
+                i = regularExpression.getIndex();
             } else {
-                generatedString.append(previous);
-                previous = current;
+                generatedString.append(getChar(readLiteral(regularExpression, current)));
+                if (i == regEx.length() - 1) {
+                    generatedString.append(getChar(regularExpression.getPrevious()));
+                }
             }
         }
         return generatedString.toString();
     }
 
-    public List<String> generate(String regEx, int numberOfResults) {
+    public List<String> generate(String regEx, int numberOfResults) throws Exception {
         ArrayList<String> strings = new ArrayList<>();
         for (int i = 0; i < numberOfResults; i++) {
             String string = generateString(regEx);
-            System.out.println(string);
             strings.add(string);
         }
         return strings;

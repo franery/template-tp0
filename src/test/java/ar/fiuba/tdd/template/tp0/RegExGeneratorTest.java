@@ -10,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 
 public class RegExGeneratorTest {
 
-    private boolean validate(String regEx, int numberOfResults) {
+    private boolean validate(String regEx, int numberOfResults) throws Exception {
         RegExGenerator generator = new RegExGenerator();
         // TODO: Uncomment parameters
         List<String> results = generator.generate(regEx, numberOfResults);
@@ -26,60 +26,81 @@ public class RegExGeneratorTest {
                     (item1, item2) -> item1 && item2);
     }
 
-
-
     @Test
-    public void testPlus() {
+    public void testPlus() throws Exception {
         assertTrue(validate("ad+",10));
     }
 
     @Test
-    public void testAsterisk() {
+    public void testAsterisk() throws Exception {
         assertTrue(validate("p*",10));
     }
 
     @Test
-    public void testQuestionMark() {
+    public void testQuestionMark() throws Exception {
         assertTrue(validate("av?",10));
     }
-    //TODO: Uncomment these tests
-/*
-
 
     @Test
-    public void testAnyCharacter() {
+    public void testAnyCharacter() throws Exception {
         assertTrue(validate(".", 1));
     }
 
     @Test
-    public void testMultipleCharacters() {
+    public void testMultipleCharacters() throws Exception {
         assertTrue(validate("...", 1));
     }
 
     @Test
-    public void testLiteral() {
-        assertTrue(validate("\\@", 1));
+    public void testCharacterSet() throws Exception {
+        assertTrue(validate("[abc]", 10));
+       // assertTrue(validate("[abc][sd]", 10));
     }
 
     @Test
-    public void testLiteralDotCharacter() {
-        assertTrue(validate("\\@..", 1));
+    public void testCharacterSetAndLiteral() throws Exception {
+        assertTrue(validate("a[abc]d", 10));
     }
 
     @Test
-    public void testZeroOrOneCharacter() {
-        assertTrue(validate("\\@.h?", 1));
+    public void testCharacterSetAndQuantifier() throws Exception {
+        assertTrue(validate("[abc]*", 10));
     }
 
     @Test
-    public void testCharacterSet() {
-        assertTrue(validate("[abc]", 1));
+    public void testLiteral() throws Exception {
+        assertTrue(validate("\\@", 10));
     }
 
     @Test
-    public void testCharacterSetWithQuantifiers() {
-        assertTrue(validate("[abc]+", 1));
+    public void testLiteralDotCharacter() throws Exception {
+        assertTrue(validate("\\@..", 10));
     }
-    */
-    // TODO: Add more tests!!!
+
+    @Test
+    public void testZeroOrOneCharacter() throws Exception {
+        assertTrue(validate("\\@.h?", 10));
+    }
+
+    @Test
+    public void testCharacterSetWithQuantifiers() throws Exception {
+        assertTrue(validate("[abc]+", 10));
+    }
+
+    @Test
+    public void testSlash() throws Exception {
+        assertTrue(validate("\\.*", 10));
+        assertTrue(validate("\\[*", 10));
+    }
+
+    @Test(expected = Exception.class)
+    public void badExpression() throws Exception {
+        assertTrue(validate("[d",1));
+    }
+
+    @Test
+    public void complex() throws Exception {
+        assertTrue(validate("..+[ab]*d?c",10));
+        assertTrue(validate(".\\.+[ab]*d?c",10));
+    }
 }
